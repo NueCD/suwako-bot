@@ -49,6 +49,25 @@ def save_ratings(user, ratings):
     with open(''.join(['ratings/', user, '.txt']), 'w') as rw:
         rw.write('\n'.join(ratings))
 
+def search(tags):
+    attempts = 0
+    while(attempts < 3):
+        try:
+            posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
+            post = posts[randint(0, len(posts))]
+            current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
+            current_channel = message.channel
+            post = ''.join(['http:', post.attrib['file_url']])
+            attempts = 4
+
+        except IndexError:
+            attempts += 1
+            post = 'Could not find any...'
+            current_channel = None
+            current_tags = None
+
+    return post
+
 try:
     with open('config.txt', 'r') as rw:
         try:
@@ -108,17 +127,7 @@ async def on_message(message):
 
         tags = '+'.join(tags)
 
-        try:
-            posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-            post = posts[randint(0, len(posts))]
-            current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
-            current_channel = message.channel
-            post = ''.join(['http:', post.attrib['file_url']])
-
-        except IndexError:
-            post = 'Could not find any...'
-            current_channel = None
-            current_tags = None
+        post = search(tags)
 
         await client.send_message(message.channel, post)
 
@@ -141,17 +150,7 @@ async def on_message(message):
         tags = '+'.join(tags)
         tags = '+'.join([tags, 'rating:safe'])
 
-        try:
-            posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-            post = posts[randint(0, len(posts))]
-            current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
-            current_channel = message.channel
-            post = ''.join(['http:', post.attrib['file_url']])
-
-        except IndexError:
-            post = 'Could not find any...'
-            current_channel = None
-            current_tags = None
+        post = search(tags)
 
         await client.send_message(message.channel, post)
 
@@ -174,17 +173,7 @@ async def on_message(message):
         tags = '+'.join(tags)
         tags = '+'.join([tags, 'rating:explicit'])
 
-        try:
-            posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-            post = posts[randint(0, len(posts))]
-            current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
-            current_channel = message.channel
-            post = ''.join(['http:', post.attrib['file_url']])
-
-        except IndexError:
-            post = 'Could not find any...'
-            current_channel = None
-            current_tags = None
+        post = search(tags)
 
         await client.send_message(message.channel, post)
 
