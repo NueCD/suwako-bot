@@ -69,6 +69,9 @@ except FileNotFoundError:
     print('Please add token to configuration file.')
     exit()
 
+if not os.path.exists('ratings'):
+    os.makedirs('ratings')
+
 print('Token: ' + token + '\nKeychar: ' + key)
 
 @client.event
