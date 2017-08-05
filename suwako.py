@@ -14,7 +14,7 @@ key = ''
 url = 'http://gelbooru.com/index.php?page=dapi&s=post&q=index&tags='
 current_tags = None
 current_channel = None
-positive_reactions = ['nice', 'wow', 'hett', 'mysigt', 'bra', 'fin', 'wau', 'hot', 'lmao', 'lol', 'söt']
+positive_reactions = []
 
 def sort_ratings(ratings):
     tags = []
@@ -56,6 +56,7 @@ try:
             token = data[0].strip('\n')
             key = data[1].strip('\n')
             debug = data[2].strip('\n')
+            positive_reactions = data[3].strip('\n').split(',')
 
         except:
             print('Error reading configuration.')
@@ -63,7 +64,7 @@ try:
 
 except FileNotFoundError:
     with open('config.txt', 'w') as rf:
-        lines = '\n'.join(['[token]', '$', '0'])
+        lines = '\n'.join(['[token]', '$', '0', 'wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute'])
         rf.write(''.join(lines))
     print('Please add token to configuration file.')
     exit()
