@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Program generated files
+config.txt
+ratings/
+
 # C extensions
 *.so
 
