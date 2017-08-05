@@ -49,7 +49,7 @@ def save_ratings(user, ratings):
     with open(''.join(['ratings/', user, '.txt']), 'w') as rw:
         rw.write('\n'.join(ratings))
 
-def search(tags):
+def search(tags, message):
     attempts = 0
     while(attempts < 3):
         try:
@@ -127,7 +127,7 @@ async def on_message(message):
 
         tags = '+'.join(tags)
 
-        post = search(tags)
+        post = search(tags, message)
 
         await client.send_message(message.channel, post)
 
@@ -150,7 +150,7 @@ async def on_message(message):
         tags = '+'.join(tags)
         tags = '+'.join([tags, 'rating:safe'])
 
-        post = search(tags)
+        post = search(tags, message)
 
         await client.send_message(message.channel, post)
 
@@ -173,7 +173,7 @@ async def on_message(message):
         tags = '+'.join(tags)
         tags = '+'.join([tags, 'rating:explicit'])
 
-        post = search(tags)
+        post = search(tags, message)
 
         await client.send_message(message.channel, post)
 
