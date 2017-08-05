@@ -261,7 +261,17 @@ async def on_message(message):
             '    $eimg - Works like $img but includes explicit tag.',
             '    $rating - See your own tag ratings.',
             '    $remove_rating [tags] - Remove tags from rating list.',
-            '    $reset_rating - Resets tag ratings.']))
+            '    $reset_rating - Resets tag ratings.',
+            '    $credits - Show program credits.']))
+
+        """
+        Show credits
+        """
+    elif message.content.startswith(''.join([key, 'help'])):
+        await client.send_message(message.channel, '```%s```' % '\n'.join(['Credits:\n'
+            '    Made by Nue-class Destroyer.',
+            '    Thanks to the maker of discord.py and my friends for helping me make this bot!',
+            '    Source: https://github.com/NueCD/suwako-bot']))
 
     elif message.channel == current_channel and current_tags != None and any(positive in message.content.lower() for positive in positive_reactions):
         tags = []
