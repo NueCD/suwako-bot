@@ -260,7 +260,7 @@ async def on_message(message):
         """
         Show credits
         """
-    elif message.content.startswith(''.join([key, 'help'])):
+    elif message.content.startswith(''.join([key, 'credits'])):
         await client.send_message(message.channel, '```%s```' % '\n'.join(['Credits:\n'
             '    Made by Nue-class Destroyer.',
             '    Thanks to the maker of discord.py and my friends for helping me make this bot!',
