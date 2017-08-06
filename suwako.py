@@ -50,18 +50,18 @@ def save_ratings(user, ratings):
         rw.write('\n'.join(ratings))
 
 def search(tags, message):
-        try:
-            posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-            post = posts[randint(0, len(posts))]
-            current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
-            current_channel = message.channel
-            post = ''.join(['http:', post.attrib['file_url']])
-            return post
+    global current_tags
+    global current_channel
+    try:
+        posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
+        post = posts[randint(0, len(posts))]
+        current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
+        current_channel = message.channel
+        post = ''.join(['http:', post.attrib['file_url']])
+        return post
 
-        except IndexError:
-            current_channel = None
-            current_tags = None
-            return None
+    except IndexError:
+        return None
 
 try:
     with open('config.txt', 'r') as rw:
