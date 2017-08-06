@@ -50,23 +50,18 @@ def save_ratings(user, ratings):
         rw.write('\n'.join(ratings))
 
 def search(tags, message):
-    attempts = 0
-    while(attempts < 3):
         try:
             posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
             post = posts[randint(0, len(posts))]
             current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
             current_channel = message.channel
             post = ''.join(['http:', post.attrib['file_url']])
-            attempts = 4
+            return post
 
         except IndexError:
-            attempts += 1
-            post = 'Could not find any...'
             current_channel = None
             current_tags = None
-
-    return post
+            return None
 
 try:
     with open('config.txt', 'r') as rw:
@@ -129,6 +124,9 @@ async def on_message(message):
 
         post = search(tags, message)
 
+        if not post:
+            post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
+
         await client.send_message(message.channel, post)
 
         """
@@ -152,6 +150,9 @@ async def on_message(message):
 
         post = search(tags, message)
 
+        if not post:
+            post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
+
         await client.send_message(message.channel, post)
 
         """
@@ -174,6 +175,9 @@ async def on_message(message):
         tags = '+'.join([tags, 'rating:explicit'])
 
         post = search(tags, message)
+
+        if not post:
+            post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
 
         await client.send_message(message.channel, post)
 
