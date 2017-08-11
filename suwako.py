@@ -54,7 +54,7 @@ def search(tags, message):
     global current_channel
     try:
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-        post = posts[randint(0, len(posts))]
+        post = posts[randint(0, len(posts)-1)]
         current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
         current_channel = message.channel
         post = ''.join(['http:', post.attrib['file_url']])
