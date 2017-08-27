@@ -59,7 +59,7 @@ def search(tags, message):
         post = posts[randint(0, len(posts)-1)]
         current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
         current_channel = message.channel
-        post = ''.join(['http:', post.attrib['file_url']])
+        post = ''.join(['http:', post.attrib['file_url'].replace('simg4.', '')])
         return post
 
     except IndexError:
