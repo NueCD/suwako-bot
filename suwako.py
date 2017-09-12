@@ -3,7 +3,7 @@ import asyncio
 import random
 import os
 from urllib.request import urlopen
-from bs4 import BeautifulSoup as bs
+#from bs4 import BeautifulSoup as bs
 from xml.etree import ElementTree
 from random import randint
 
@@ -245,7 +245,7 @@ async def on_message(message):
 
         """
         Search disc information
-        """
+        
     elif message.content.startswith(''.join([key, 'disc'])):
         try:
             url = "http://www.discsport.se/shopping/index.php?search="
@@ -270,7 +270,7 @@ async def on_message(message):
         except AttributeError:
             post = "```No disc was found.\nSearched for: %s```" % (s_string)
 
-        await client.send_message(message.channel, post)
+        await client.send_message(message.channel, post)"""
 
         """
         Help prints all commands
@@ -292,13 +292,13 @@ async def on_message(message):
 
         """
         Latest release news
-        """
+        
     elif message.content.startswith(''.join([key, 'news'])):
         await client.send_message(message.channel, '```%s```' % '\n'.join(['News:\n'
             '    A new command to find discs on discsport.se has been made!',
             '    Use it by typeing $disc [string].',
             '    It will try to search for a disc based on the search string.'
-            ]))
+            ]))"""
 
         """
         Show credits
