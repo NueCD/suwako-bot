@@ -268,7 +268,7 @@ async def on_message(message):
                 post = "%s\n%s" % (name, disc)
 
         except AttributeError:
-            post = "```No disc was found.\nSearched for: %s```" % (message.content)
+            post = "```No disc was found.\nSearched for: %s```" % (s_string)
 
         await client.send_message(message.channel, post)
 
