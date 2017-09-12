@@ -267,7 +267,7 @@ async def on_message(message):
             else:
                 post = "%s\n%s" % (name, disc)
 
-        except NoneType:
+        except AttributeError:
             post = "```No disc was found.\nSearched for: %s```" % (message.content)
 
         await client.send_message(message.channel, post)
