@@ -3,6 +3,7 @@ import asyncio
 import random
 import os
 from urllib.request import urlopen
+from bs4 import BeautifulSoup as bs
 from xml.etree import ElementTree
 from random import randint
 
@@ -243,11 +244,41 @@ async def on_message(message):
         await client.send_message(message.channel, post)
 
         """
+        Search disc information
+        """
+    elif message.content.startswith(''.join([key, 'disc'])):
+        try:
+            url = "http://www.discsport.se/shopping/index.php?search="
+            s_string = message.content.split(' ')
+            s_string.pop(0)
+
+
+            html = bs(urlopen(''.join([url, '+'.join(s_string)])).read(), 'html.parser')
+            disc = html.find('div', id='discbox').a.get('href')
+
+            html = bs(urlopen(disc).read(), 'html.parser')
+            name = html.find('h1').string
+            stats = []
+            for i in html.find('tr').find_all('a'):
+                stats.append(i.string.replace(" ", "").replace("\n", ""))
+
+            if stats:
+                post = "%s (%s)\nSpeed: %s\nGlide: %s\nStability: %s\nFade: %s\n" % (name, disc, stats[0], stats[1], stats[2], stats[3])
+            else:
+                post = "%s\n%s" % (name, disc)
+
+        except NoneType:
+            post = "```No disc was found.\nSearched for: %s```" % (message.content)
+
+        await client.send_message(message.channel, post)
+
+        """
         Help prints all commands
         """
     elif message.content.startswith(''.join([key, 'help'])):
         await client.send_message(message.channel, '```%s```' % '\n'.join(['Commandlist:\n'
             '    $hi - Says hello back.',
+            '    $disc [string] - Search for discs on discsport.se.',
             '    $img - Returns a gelbooru image based on ratings.',
             '        Three random tags in your top 10 list will be used.',
             '        Ratings are improved by giving reactions to images.',
@@ -258,6 +289,16 @@ async def on_message(message):
             '    $remove_rating [tags] - Remove tags from rating list.',
             '    $reset_rating - Resets tag ratings.',
             '    $credits - Show program credits.']))
+
+        """
+        Latest release news
+        """
+    elif message.content.startswith(''.join([key, 'news'])):
+        await client.send_message(message.channel, '```%s```' % '\n'.join(['News:\n'
+            '    A new command to find discs on discsport.se has been made!',
+            '    Use it by typeing $disc [string].',
+            '    It will try to search for a disc based on the search string.'
+            ]))
 
         """
         Show credits
