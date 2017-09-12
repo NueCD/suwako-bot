@@ -278,7 +278,7 @@ async def on_message(message):
     elif message.content.startswith(''.join([key, 'help'])):
         await client.send_message(message.channel, '```%s```' % '\n'.join(['Commandlist:\n'
             '    $hi - Says hello back.',
-            '    $disc [string] - Search for discs on discsport.se.',
+            '    Disabled: $disc [string] - Search for discs on discsport.se.',
             '    $img - Returns a gelbooru image based on ratings.',
             '        Three random tags in your top 10 list will be used.',
             '        Ratings are improved by giving reactions to images.',
