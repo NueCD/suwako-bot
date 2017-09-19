@@ -2,6 +2,7 @@ import discord
 import asyncio
 import random
 import os
+import re
 from urllib.request import urlopen
 #from bs4 import BeautifulSoup as bs
 from xml.etree import ElementTree
@@ -60,7 +61,7 @@ def search(tags, message):
         post = posts[randint(0, len(posts)-1)]
         current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
         current_channel = message.channel
-        post = ''.join(['http:', post.attrib['file_url'].replace('simg4.', '')])
+        post = ''.join(['http:', re.sub(r'simg.\.', '', post.attrib['file_url'])])
         return post
 
     except IndexError:
