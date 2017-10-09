@@ -57,13 +57,13 @@ def search(tags, message):
     try:
         shim = re.compile(r'^.*shimakaze.*$')
         tags = tags.split('+')
+        
         for t in tags:
             if shim.search(t):
                 tags.append('-trap')
                 tags.append('-cosplay')
-                tags = '+'.join(tags)
 
-        print(tags)
+        tags = '+'.join(tags)
 
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
         if not posts:
