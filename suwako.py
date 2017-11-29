@@ -181,7 +181,7 @@ async def on_message(message):
         Return safe gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'simg'])):
-        tags = compile_tags(message)
+        tags = compile_tags(message, message.author.id)
         tags = '+'.join([tags, 'rating:safe'])
         post = search(tags, message)
 
@@ -194,7 +194,7 @@ async def on_message(message):
         Return explicit gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'eimg'])):
-        tags = compile_tags(message)
+        tags = compile_tags(message, message.author.id)
         tags = '+'.join([tags, 'rating:explicit'])
         post = search(tags, message)
 
