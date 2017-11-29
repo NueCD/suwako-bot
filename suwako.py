@@ -1,8 +1,4 @@
-import discord
-import asyncio
-import random
-import os
-import re
+import os, re, sys, random, asyncio, discord
 from urllib.request import urlopen
 from xml.etree import ElementTree
 from random import randint
@@ -106,10 +102,11 @@ def search(tags, message):
                 tags.append('-cosplay')
 
         tags = '+'.join(tags)
-
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
+        if posts.attrib['success'] == "false":
+            return ''.join(["```Gelbooru says:\n    ", posts.attrib['reason'], "```"])
         if not posts:
-        	return None
+            return None
         post = posts[randint(0, len(posts)-1)]
         current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
         current_channel = message.channel
@@ -121,6 +118,8 @@ def search(tags, message):
         return post
 
     except IndexError:
+        if debug:
+            print(res)
         return None
 
 
@@ -340,5 +339,7 @@ async def on_ready():
 """
 Print key and run.
 """
+if debug:
+    print("Debugging.")
 print('Token: ' + token + '\nKeychar: ' + key)
 client.run(token)
