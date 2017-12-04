@@ -103,10 +103,17 @@ def search(tags, message):
 
         tags = '+'.join(tags)
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-        if posts.attrib['success'] == "false":
-            return ''.join(["```Gelbooru says:\n    ", posts.attrib['reason'], "```"])
+        
+        try:
+            if posts.attrib['success'] == "false":
+                return ''.join(["```Gelbooru says:\n    ", posts.attrib['reason'], "```"])
+            
+        except KeyError:
+            pass
+
         if not posts:
             return None
+
         post = posts[randint(0, len(posts)-1)]
         current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
         current_channel = message.channel
@@ -306,7 +313,7 @@ try:
             data = rw.readlines()
             token = data[0].strip('\n')
             key = data[1].strip('\n')
-            debug = data[2].strip('\n')
+            debug = int(data[2].strip('\n'))
             positive_reactions = data[3].strip('\n').split(',')
 
             if not os.path.exists('ratings'):
