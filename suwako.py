@@ -148,6 +148,8 @@ def compile_tags(message, user):
     except ValueError:
         pass
     
+    tags = '+'.join(tags)
+
     try:
         print('%s\n%s' % (latest_search.replace('+rating:explicit', '').replace('+rating:safe', ''), tags))
         if latest_search.replace('+rating:explicit', '').replace('+rating:safe', '') == tags and '*' not in latest_search:
