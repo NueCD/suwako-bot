@@ -103,10 +103,17 @@ def search(tags, message):
 
         tags = '+'.join(tags)
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
-        if posts.attrib['success'] == "false":
-            return ''.join(["```Gelbooru says:\n    ", posts.attrib['reason'], "```"])
+        
+        try:
+            if posts.attrib['success'] == "false":
+                return ''.join(["```Gelbooru says:\n    ", posts.attrib['reason'], "```"])
+            
+        except KeyError:
+            pass
+
         if not posts:
             return None
+
         post = posts[randint(0, len(posts)-1)]
         current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
         current_channel = message.channel
