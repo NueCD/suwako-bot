@@ -94,10 +94,11 @@ def search(tags, message):
     try:
         # No waifu gay shit allowed. :)
         shim = re.compile(r'^.*shimakaze.*$')
+        liz = re.compile(r'^.*lancer.*$')
         tags = tags.split('+')
         
         for t in tags:
-            if shim.search(t):
+            if shim.search(t) or liz.search(t):
                 tags.append('-trap')
                 tags.append('-cosplay')
 
@@ -146,11 +147,14 @@ def compile_tags(message, user):
 
     except ValueError:
         pass
+    
+    try:
+        print('%s\n%s' % (latest_search.replace('+rating:explicit', '').replace('+rating:safe', ''), tags))
+        if latest_search.replace('+rating:explicit', '').replace('+rating:safe', '') == tags and '*' not in latest_search:
+            save_ratings(message.author.id, sort_ratings(add_ratings(tags.split('+'), user)))
 
-    tags = '+'.join(tags)
-
-    if latest_search == tags:
-        save_ratings(message.author.id, sort_ratings(add_ratings(tags.split('+'), user)))
+    except AttributeError:
+        pass
 
     return tags
 
