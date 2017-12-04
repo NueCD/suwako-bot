@@ -151,7 +151,6 @@ def compile_tags(message, user):
     tags = '+'.join(tags)
 
     try:
-        print('%s\n%s' % (latest_search.replace('+rating:explicit', '').replace('+rating:safe', ''), tags))
         if latest_search.replace('+rating:explicit', '').replace('+rating:safe', '') == tags and '*' not in latest_search:
             save_ratings(message.author.id, sort_ratings(add_ratings(tags.split('+'), user)))
 
