@@ -121,11 +121,17 @@ def search(tags, message):
 
         # Gelboodu added some strange url that sometimes returns 404.
         post = re.sub(r'simg.\.', '', post.attrib['file_url'])
+
         if post:
             latest_search = tags
+
+        if 'trap' in current_tags:
+            current_tags = None
+            post = '```Encountered banned image. Please try again.```'
+
         return post
 
-    except IndexError:
+    except IndexError as res:
         if debug:
             print(res)
         return None
