@@ -313,7 +313,7 @@ try:
             data = rw.readlines()
             token = data[0].strip('\n')
             key = data[1].strip('\n')
-            debug = data[2].strip('\n')
+            debug = int(data[2].strip('\n'))
             positive_reactions = data[3].strip('\n').split(',')
 
             if not os.path.exists('ratings'):
