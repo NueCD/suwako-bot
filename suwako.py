@@ -187,11 +187,8 @@ async def on_message(message):
         Return random gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'img'])):
-        i = 0
-        post = None
-        while i < 3 and not post:
-            tags = compile_tags(message, message.author.id)
-            post = search(tags, message)
+        tags = compile_tags(message, message.author.id)
+        post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -202,12 +199,9 @@ async def on_message(message):
         Return safe gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'simg'])):
-        i = 0
-        post = None
-        while i < 3 and not post:
-            tags = compile_tags(message, message.author.id)
-            tags = '+'.join([tags, 'rating:safe'])
-            post = search(tags, message)
+        tags = compile_tags(message, message.author.id)
+        tags = '+'.join([tags, 'rating:safe'])
+        post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -218,12 +212,9 @@ async def on_message(message):
         Return explicit gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'eimg'])):
-        i = 0
-        post = None
-        while i < 3 and not post:
-            tags = compile_tags(message, message.author.id)
-            tags = '+'.join([tags, 'rating:explicit'])
-            post = search(tags, message)
+        tags = compile_tags(message, message.author.id)
+        tags = '+'.join([tags, 'rating:explicit'])
+        post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
