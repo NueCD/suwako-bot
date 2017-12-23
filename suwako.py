@@ -2,6 +2,7 @@ import os, re, sys, random, asyncio, discord
 from urllib.request import urlopen
 from xml.etree import ElementTree
 from random import randint
+from pyquery import PyQuery
 
 debug = 0
 
@@ -186,8 +187,11 @@ async def on_message(message):
         Return random gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'img'])):
-        tags = compile_tags(message, message.author.id)
-        post = search(tags, message)
+        i = 0
+        post = None
+        while i < 3 and not post:
+            tags = compile_tags(message, message.author.id)
+            post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -198,9 +202,12 @@ async def on_message(message):
         Return safe gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'simg'])):
-        tags = compile_tags(message, message.author.id)
-        tags = '+'.join([tags, 'rating:safe'])
-        post = search(tags, message)
+        i = 0
+        post = None
+        while i < 3 and not post:
+            tags = compile_tags(message, message.author.id)
+            tags = '+'.join([tags, 'rating:safe'])
+            post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -211,9 +218,12 @@ async def on_message(message):
         Return explicit gelbooru image.
         """
     elif message.content.startswith(''.join([key, 'eimg'])):
-        tags = compile_tags(message, message.author.id)
-        tags = '+'.join([tags, 'rating:explicit'])
-        post = search(tags, message)
+        i = 0
+        post = None
+        while i < 3 and not post:
+            tags = compile_tags(message, message.author.id)
+            tags = '+'.join([tags, 'rating:explicit'])
+            post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -280,6 +290,28 @@ async def on_message(message):
         await client.send_message(message.channel, post)
 
         """
+        Get wildcard alternatives
+        """
+    elif message.content.startswith(''.join([key, 'wildcard'])):
+        tags = []
+        try:
+            html = PyQuery(urlopen(''.join(["https://gelbooru.com/index.php?page=tags&s=list&tags=", \
+                message.content.split(' ')[1]])).read())
+            
+            for p in html('table.highlightable tr').items():
+                tags.append(p('span').text())
+
+        except:
+            post = "General exception."
+
+        if tags:
+            post = "```Wildcard matches:%s```" % '\n    '.join(tags)
+        else:
+            post = "```No matches found.```"
+
+        await client.send_message(message.channel, post)
+
+        """
         Help prints all commands.
         """
     elif message.content.startswith(''.join([key, 'help'])):
@@ -292,6 +324,7 @@ async def on_message(message):
             '    $simg - Works like $img but includes safe tag.',
             '    $eimg - Works like $img but includes explicit tag.',
             '    $rating - See your own tag ratings.',
+            '    $wildcard [tag] - search for a tag.',
             '    $remove_rating [tags] - Remove tags from rating list.',
             '    $reset_rating - Resets tag ratings.',
             '    $credits - Show program credits.']))
