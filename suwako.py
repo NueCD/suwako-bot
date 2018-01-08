@@ -80,6 +80,8 @@ def get_ratings(user):
 Save ratings to profiles
 """
 def save_ratings(user, ratings):
+    if debug:
+        print("Updated ratings")
     with open(''.join(['ratings/', user, '.txt']), 'w') as rw:
         rw.write('\n'.join(ratings))
 
@@ -93,6 +95,7 @@ def search(tags, message):
     global latest_search
 
     try:
+        tagsa = tags
         # No waifu gay shit allowed. :)
         shim = re.compile(r'^.*shimakaze.*$')
         liz = re.compile(r'^.*lancer.*$')
@@ -104,6 +107,8 @@ def search(tags, message):
                 tags.append('-cosplay')
 
         tags = '+'.join(tags)
+        if debug:
+            print(''.join([url, tags]))
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
         
         try:
@@ -117,14 +122,15 @@ def search(tags, message):
             return None
 
         post = posts[randint(0, len(posts)-1)]
-        current_tags = filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' ')))
+        current_tags = list(filter(lambda k: ':' not in k, filter(None, post.attrib['tags'].split(' '))))
         current_channel = message.channel
 
         # Gelboodu added some strange url that sometimes returns 404.
-        post = re.sub(r'simg.\.', '', post.attrib['file_url'])
+        #post = re.sub(r'simg.\.', '', post.attrib['file_url'])
+        post = post.attrib['file_url']
 
-        if post:
-            latest_search = tags
+        if post and tags:
+            latest_search = tagsa
 
         if 'trap' in current_tags:
             current_tags = None
@@ -156,9 +162,13 @@ def compile_tags(message, user):
         pass
     
     tags = '+'.join(tags)
+    if debug:
+        print(tags)
 
     try:
         if latest_search.replace('+rating:explicit', '').replace('+rating:safe', '') == tags and '*' not in latest_search:
+            if debug:
+                print("Repetetive search")
             save_ratings(message.author.id, sort_ratings(add_ratings(tags.split('+'), user)))
 
     except AttributeError:
@@ -189,7 +199,11 @@ async def on_message(message):
     elif message.content.startswith(''.join([key, 'img'])):
         tags = compile_tags(message, message.author.id)
         post = search(tags, message)
-
+        i = 0
+        while i < 3 and not post:
+            tags = compile_tags(message, message.author.id)
+            post = search(tags, message)
+        
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
 
@@ -203,6 +217,12 @@ async def on_message(message):
         tags = '+'.join([tags, 'rating:safe'])
         post = search(tags, message)
 
+        i = 0
+        while i < 3 and not post:
+            tags = compile_tags(message, message.author.id)
+            tags = '+'.join([tags, 'rating:safe'])
+            post = search(tags, message)
+
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
 
@@ -215,6 +235,12 @@ async def on_message(message):
         tags = compile_tags(message, message.author.id)
         tags = '+'.join([tags, 'rating:explicit'])
         post = search(tags, message)
+
+        i = 0
+        while i < 3 and not post:
+            tags = compile_tags(message, message.author.id)
+            tags = '+'.join([tags, 'rating:explicit'])
+            post = search(tags, message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -334,7 +360,8 @@ async def on_message(message):
         """
     elif message.channel == current_channel and current_tags != None and \
         any(positive in message.content.lower() for positive in positive_reactions):
-        
+        if debug:
+            print("Positive word")
         ratings = add_ratings(current_tags, message.author.id)
         save_ratings(message.author.id, sort_ratings(ratings))
 
