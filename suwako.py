@@ -203,6 +203,7 @@ async def on_message(message):
         while i < 3 and not post:
             tags = compile_tags(message, message.author.id)
             post = search(tags, message)
+            i += 1
         
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -222,6 +223,7 @@ async def on_message(message):
             tags = compile_tags(message, message.author.id)
             tags = '+'.join([tags, 'rating:safe'])
             post = search(tags, message)
+            i += 1
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -241,6 +243,7 @@ async def on_message(message):
             tags = compile_tags(message, message.author.id)
             tags = '+'.join([tags, 'rating:explicit'])
             post = search(tags, message)
+            i += 1
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
