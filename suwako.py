@@ -14,6 +14,7 @@ current_tags = None
 current_channel = None
 latest_search = None
 positive_reactions = []
+negative_reactions = []
 
 
 """
@@ -51,6 +52,32 @@ def add_ratings(current_tags, user):
     for t in current_tags:
         try:
             scores[tags.index(t)] += 1
+
+        except ValueError:
+            tags.append(t)
+            scores.append(0)
+
+    for i in range(len(tags)):
+        ratings.append(': '.join([tags[i], str(scores[i])]))
+
+    return ratings
+
+def lower_ratings(current_tags, user):
+    tags = []
+    scores = []
+    ratings = []
+
+    for r in get_ratings(user):
+        a = r.split(': ')
+        tags.append(a[0])
+        scores.append(int(a[1]))
+
+    for t in current_tags:
+        try:
+            scores[tags.index(t)] -= 2
+
+            if scores[tags.index(t)] < 0:
+            	scores[tags.index(t)] = 0
 
         except ValueError:
             tags.append(t)
@@ -194,26 +221,9 @@ async def on_message(message):
             message.author.mention]))
 
         """
-        Return random gelbooru image.
-        """
-    elif message.content.startswith(''.join([key, 'img'])):
-        tags = compile_tags(message, message.author.id)
-        post = search(tags, message)
-        i = 0
-        while i < 3 and not post:
-            tags = compile_tags(message, message.author.id)
-            post = search(tags, message)
-            i += 1
-        
-        if not post:
-            post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
-
-        await client.send_message(message.channel, post)
-
-        """
         Return safe gelbooru image.
         """
-    elif message.content.startswith(''.join([key, 'simg'])):
+    elif message.content.startswith(''.join([key, 'img'])):
         tags = compile_tags(message, message.author.id)
         tags = '+'.join([tags, 'rating:safe'])
         post = search(tags, message)
@@ -341,8 +351,7 @@ async def on_message(message):
             '        Three random tags in your top 10 list will be used.',
             '        Ratings are improved by giving reactions to images.',
             '    $img [tags] - Returns a gelbooru image with tags.',
-            '    $simg - Works like $img but includes safe tag.',
-            '    $eimg - Works like $img but includes explicit tag.',
+            '    $eimg [tags] - Returns an explicit  gelbooru image with tags.',
             '    $rating - See your own tag ratings.',
             '    $wildcard [tag] - search for a tag.',
             '    $remove_rating [tags] - Remove tags from rating list.',
@@ -368,6 +377,12 @@ async def on_message(message):
         ratings = add_ratings(current_tags, message.author.id)
         save_ratings(message.author.id, sort_ratings(ratings))
 
+    elif message.channel == current_channel and current_tags != None and \
+        any(negative in message.content.lower() for negative in negative_reactions):
+        if debug:
+            print("Negative word")
+        ratings = lower_ratings(current_tags, message.author.id)
+        save_ratings(message.author.id, sort_ratings(ratings))
 
 """
 Load configuration.
@@ -380,6 +395,7 @@ try:
             key = data[1].strip('\n')
             debug = int(data[2].strip('\n'))
             positive_reactions = data[3].strip('\n').split(',')
+            negative_reactions = data[4].strip('\n').split(',')
 
             if not os.path.exists('ratings'):
                 os.makedirs('ratings')
@@ -394,7 +410,7 @@ try:
     """
 except FileNotFoundError:
     with open('config.txt', 'w') as rf:
-        lines = '\n'.join(['[token]', '$', '0', 'wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute'])
+        lines = '\n'.join(['[token]', '$', '0', 'wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute', 'ugh,fy,nej'])
         rf.write(''.join(lines))
     print('Please add token to configuration file.')
     exit()
