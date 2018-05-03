@@ -1,20 +1,17 @@
-import os, re, sys, random, asyncio, discord
+import os, re, sys, random, asyncio, discord, signal, traceback
 from urllib.request import urlopen
 from xml.etree import ElementTree
 from random import randint
 from pyquery import PyQuery
 
-debug = 0
-
 client = discord.Client()
-token = ''
-key = ''
+data = {}
+tag_weight = {}
 url = 'http://gelbooru.com/index.php?page=dapi&s=post&q=index&tags='
+source = None
 current_tags = None
 current_channel = None
 latest_search = None
-positive_reactions = []
-negative_reactions = []
 
 
 """
@@ -27,7 +24,7 @@ def sort_ratings(ratings):
     for r in ratings:
         a = r.split(': ')
         tags.append(a[0])
-        scores.append(int(a[1]))
+        scores.append(float(a[1]))
 
     tags = [i[0] for i in sorted(zip(tags, scores), key=lambda l: l[1], reverse=True)]
     scores = list(reversed(sorted(scores)))
@@ -38,7 +35,9 @@ def sort_ratings(ratings):
 
     return ratings
 
-
+"""
+Increese ratings
+"""
 def add_ratings(current_tags, user):
     tags = []
     scores = []
@@ -47,11 +46,11 @@ def add_ratings(current_tags, user):
     for r in get_ratings(user):
         a = r.split(': ')
         tags.append(a[0])
-        scores.append(int(a[1]))
+        scores.append(float(a[1]))
 
     for t in current_tags:
         try:
-            scores[tags.index(t)] += 1
+            scores[tags.index(t)] += 1 * (data['reaction_weight_mod'] / tag_weight[t])
 
         except ValueError:
             tags.append(t)
@@ -62,6 +61,9 @@ def add_ratings(current_tags, user):
 
     return ratings
 
+"""
+Decreese ratings
+"""
 def lower_ratings(current_tags, user):
     tags = []
     scores = []
@@ -70,14 +72,14 @@ def lower_ratings(current_tags, user):
     for r in get_ratings(user):
         a = r.split(': ')
         tags.append(a[0])
-        scores.append(int(a[1]))
+        scores.append(float(a[1]))
 
     for t in current_tags:
         try:
-            scores[tags.index(t)] -= 2
+            scores[tags.index(t)] -= -1 * (data['reaction_weight_mod'] / tag_weight[t])
 
             if scores[tags.index(t)] < 0:
-            	scores[tags.index(t)] = 0
+                scores[tags.index(t)] = 0
 
         except ValueError:
             tags.append(t)
@@ -107,11 +109,30 @@ def get_ratings(user):
 Save ratings to profiles
 """
 def save_ratings(user, ratings):
-    if debug:
+    if data['debug']:
         print("Updated ratings")
     with open(''.join(['ratings/', user, '.txt']), 'w') as rw:
         rw.write('\n'.join(ratings))
 
+
+"""
+Add weight
+"""
+def add_weight(current_tags):
+    for t in current_tags:
+        try:
+            tag_weight[t] += (data['reaction_weight_mod'] / tag_weight[t])
+
+        except KeyError:
+            tag_weight[t] = 1.0
+
+    with open('ratings/weights.txt', 'w') as rw:
+        ratings = []
+        for t in tag_weight.items():
+            ratings.append(''.join([t[0], ':', str(t[1])]))
+        rw.write('\n'.join(ratings))
+    if data['debug']:
+        print('Added weight')
 
 """
 Search for image on Gelbooru
@@ -120,21 +141,19 @@ def search(tags, message):
     global current_tags
     global current_channel
     global latest_search
+    global source
 
     try:
         tagsa = tags
-        # No waifu gay shit allowed. :)
-        shim = re.compile(r'^.*shimakaze.*$')
-        liz = re.compile(r'^.*lancer.*$')
         tags = tags.split('+')
-        
-        for t in tags:
-            if shim.search(t) or liz.search(t):
-                tags.append('-trap')
-                tags.append('-cosplay')
+
+        tags.append('-trap')
+        tags.append('-futanari')
+        tags.append('-loli')
+        tags.append('-shota')
 
         tags = '+'.join(tags)
-        if debug:
+        if data['debug']:
             print(''.join([url, tags]))
         posts = ElementTree.fromstring(urlopen(''.join([url, tags])).read())
         
@@ -154,19 +173,16 @@ def search(tags, message):
 
         # Gelboodu added some strange url that sometimes returns 404.
         #post = re.sub(r'simg.\.', '', post.attrib['file_url'])
+        source = post.attrib['source']
         post = post.attrib['file_url']
 
         if post and tags:
             latest_search = tagsa
 
-        if 'trap' in current_tags:
-            current_tags = None
-            post = '```Encountered banned image. Please try again.```'
-
         return post
 
     except IndexError as res:
-        if debug:
+        if data['debug']:
             print(res)
         return None
 
@@ -189,12 +205,12 @@ def compile_tags(message, user):
         pass
     
     tags = '+'.join(tags)
-    if debug:
+    if data['debug']:
         print(tags)
 
     try:
         if latest_search.replace('+rating:explicit', '').replace('+rating:safe', '') == tags and '*' not in latest_search:
-            if debug:
+            if data['debug']:
                 print("Repetetive search")
             save_ratings(message.author.id, sort_ratings(add_ratings(tags.split('+'), user)))
 
@@ -216,14 +232,24 @@ async def on_message(message):
     """
     Just reply with Hello.
     """
-    if message.content.startswith(''.join([key, 'hi'])):
+    if message.content.startswith(''.join([data['key'], 'hi'])):
         await client.send_message(message.channel, ''.join(['Hello ', 
             message.author.mention]))
+
+    """
+    Return source of last image.
+    """
+    if message.content.startswith(''.join([data['key'], 'source'])):
+        if source:
+            await client.send_message(message.channel, source)
+        else:
+            await client.send_message(message.channel, '```Source is empty.```')
+
 
         """
         Return safe gelbooru image.
         """
-    elif message.content.startswith(''.join([key, 'img'])):
+    elif message.content.startswith(''.join([data['key'], 'img'])):
         tags = compile_tags(message, message.author.id)
         tags = '+'.join([tags, 'rating:safe'])
         post = search(tags, message)
@@ -238,12 +264,13 @@ async def on_message(message):
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
 
+        add_weight(current_tags)
         await client.send_message(message.channel, post)
 
         """
         Return explicit gelbooru image.
         """
-    elif message.content.startswith(''.join([key, 'eimg'])):
+    elif message.content.startswith(''.join([data['key'], 'eimg'])):
         tags = compile_tags(message, message.author.id)
         tags = '+'.join([tags, 'rating:explicit'])
         post = search(tags, message)
@@ -258,12 +285,13 @@ async def on_message(message):
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
 
+        add_weight(current_tags)
         await client.send_message(message.channel, post)
 
         """
         Print top 10 ratings.
         """
-    elif message.content.startswith(''.join([key, 'rating'])):
+    elif message.content.startswith(''.join([data['key'], 'rating'])):
         ratings = get_ratings(message.author.id)[:10]
         if ratings:
             post = '```Your top ten tags are:\n    %s```' % '\n    '.join(ratings)
@@ -275,7 +303,7 @@ async def on_message(message):
         """
         Clear all ratings.
         """
-    elif message.content.startswith(''.join([key, 'reset_rating'])):
+    elif message.content.startswith(''.join([data['key'], 'reset_rating'])):
         try:
             os.remove(''.join(['ratings/', message.author.id, '.txt']))
             post = '```Ratings removed.```'
@@ -288,7 +316,7 @@ async def on_message(message):
         """
         Remove ratings.
         """
-    elif message.content.startswith(''.join([key, 'remove_rating'])):
+    elif message.content.startswith(''.join([data['key'], 'remove_rating'])):
         r_tags = message.content.split(' ')
         r_tags.pop(0)
         tags = []
@@ -322,20 +350,22 @@ async def on_message(message):
         """
         Get wildcard alternatives
         """
-    elif message.content.startswith(''.join([key, 'wildcard'])):
+    elif message.content.startswith(''.join([data['key'], 'tag'])):
         tags = []
         try:
-            html = PyQuery(urlopen(''.join(["https://gelbooru.com/index.php?page=tags&s=list&tags=", \
-                message.content.split(' ')[1]])).read())
+            html = PyQuery(urlopen(''.join(["https://gelbooru.com/index.php?page=tags&s=list&tags=*", \
+                message.content.split(' ')[1], '*&sort=desc&order_by=index_count'])).read())
             
             for p in html('table.highlightable tr').items():
                 tags.append(p('span').text())
+
+            tags = tags[:10]
 
         except:
             post = "General exception."
 
         if tags:
-            post = "```Wildcard matches:%s```" % '\n    '.join(tags)
+            post = "```Tag matches (max 10):%s```" % '\n    '.join(tags)
         else:
             post = "```No matches found.```"
 
@@ -344,16 +374,14 @@ async def on_message(message):
         """
         Help prints all commands.
         """
-    elif message.content.startswith(''.join([key, 'help'])):
+    elif message.content.startswith(''.join([data['key'], 'help'])):
         await client.send_message(message.channel, '```%s```' % '\n'.join(['Commandlist:\n'
             '    $hi - Says hello back.',
-            '    $img - Returns a gelbooru image based on ratings.',
-            '        Three random tags in your top 10 list will be used.',
-            '        Ratings are improved by giving reactions to images.',
-            '    $img [tags] - Returns a gelbooru image with tags.',
+            '    $img [tags] - Returns a safe gelbooru image with tags.',
             '    $eimg [tags] - Returns an explicit  gelbooru image with tags.',
+            '    $source - Returns source of previous image.',
             '    $rating - See your own tag ratings.',
-            '    $wildcard [tag] - search for a tag.',
+            '    $tag [tag] - search for a tag.',
             '    $remove_rating [tags] - Remove tags from rating list.',
             '    $reset_rating - Resets tag ratings.',
             '    $credits - Show program credits.']))
@@ -361,9 +389,9 @@ async def on_message(message):
         """
         Show credits.
         """
-    elif message.content.startswith(''.join([key, 'credits'])):
+    elif message.content.startswith(''.join([data['key'], 'credits'])):
         await client.send_message(message.channel, '```%s```' % '\n'.join(['Credits:\n'
-            '    Made by Nue-class Destroyer.',
+            '    Made by Nuekaze.',
             '    Thanks to the maker of discord.py and my friends for helping me make this bot!',
             '    Source: https://github.com/NueCD/suwako-bot']))
 
@@ -371,16 +399,18 @@ async def on_message(message):
         Look for positive responses to increese ratings.
         """
     elif message.channel == current_channel and current_tags != None and \
-        any(positive in message.content.lower() for positive in positive_reactions):
-        if debug:
+        any(positive in message.content.lower() for positive in data['positive_reactions']):
+        if data['debug']:
             print("Positive word")
+
         ratings = add_ratings(current_tags, message.author.id)
         save_ratings(message.author.id, sort_ratings(ratings))
 
     elif message.channel == current_channel and current_tags != None and \
-        any(negative in message.content.lower() for negative in negative_reactions):
-        if debug:
+        any(negative in message.content.lower() for negative in data['negative_reactions']):
+        if data['debug']:
             print("Negative word")
+        
         ratings = lower_ratings(current_tags, message.author.id)
         save_ratings(message.author.id, sort_ratings(ratings))
 
@@ -390,19 +420,34 @@ Load configuration.
 try:
     with open('config.txt', 'r') as rw:
         try:
-            data = rw.readlines()
-            token = data[0].strip('\n')
-            key = data[1].strip('\n')
-            debug = int(data[2].strip('\n'))
-            positive_reactions = data[3].strip('\n').split(',')
-            negative_reactions = data[4].strip('\n').split(',')
+            data = {}
+            for a in rw.readlines():
+                b = a.strip('\n').split('=')
+                data[b[0]] = b[1]
+            data['debug'] = int(data['debug'])
+            data['positive_reactions'] = data['positive_reactions'].split(',')
+            data['negative_reactions'] = data['negative_reactions'].split(',')
+            data['reaction_weight_mod'] = float(data['reaction_weight_mod'])
 
             if not os.path.exists('ratings'):
                 os.makedirs('ratings')
 
+            try:
+                ratings = None
+                with open('ratings/weights.txt', 'r') as rw:
+                    for a in rw.read().split('\n'):
+                        a = a.split(':')
+                        tag_weight[a[0]] = float(a[1])
+
+            except FileNotFoundError:
+                pass
+
         except:
-            print('Error reading configuration.')
-            exit()
+            if data['debug']:
+                print(traceback.format_exc())
+            print('Error loading configuration. Check configuration.')
+            input('Press enter to exit.')
+            sys.exit(0)
 
 
     """
@@ -410,11 +455,16 @@ try:
     """
 except FileNotFoundError:
     with open('config.txt', 'w') as rf:
-        lines = '\n'.join(['[token]', '$', '0', 'wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute', 'ugh,fy,nej'])
+        lines = '\n'.join(['token=[token]', 'key=$', 'debug=0', \
+            'positive_reactions=wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute', 'negative_reactions=ugh,fy,nej'])
         rf.write(''.join(lines))
     print('Please add token to configuration file.')
-    exit()
+    input('Press any key to exit.')
+    sys.exit(0)
 
+
+def signal_exit(signal, frame):
+    sys.exit(0)
 
 """
 Login when program is loaded.
@@ -422,12 +472,12 @@ Login when program is loaded.
 @client.event
 async def on_ready():
     print('Logged in as: %s (%s)' % (client.user.name, client.user.id))
-
+    signal.signal(signal.SIGINT, signal_exit)
 
 """
 Print key and run.
 """
-if debug:
+if data['debug']:
     print("Debugging.")
-print('Token: ' + token + '\nKeychar: ' + key)
-client.run(token)
+print('Token: ' + data['token'] + '\nKeychar: ' + data['key'])
+client.run(data['token'])
