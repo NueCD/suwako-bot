@@ -1,0 +1,18 @@
+[Unit]
+Description=Suwako-chan Discord Imagebot
+
+[Path]
+PathExists=/opt/suwako-bot
+
+[Service]
+Type=simple
+PIDFile=/run/suwako-bot.pid
+WorkingDirectory=/opt/suwako-bot
+ExecStart=/bin/bash /opt/suwako-bot/run.sh -v
+ExecRestart=kill $MAINPID && /bin/bash /opt/suwako-bot/run.sh -v
+ExecStop=kill $MAINPID
+User=suwako
+Group=suwako
+
+[Install]
+WantedBy=multi-user.target

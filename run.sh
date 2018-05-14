@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check python version
-PVERSION=$(python -c "import sys; print(sys.version_info[0])")
+PVERSION="$(python -c "import sys; print(sys.version_info[0])")"
 PYTHON='python'
 WDIR="$(pwd)"
 
@@ -49,6 +49,7 @@ if [[ $* = *'-v'* || $* = *'--virtualenv'* ]]; then
 		echo 'Virtualenv is not set up. Run "suwkao.sh -v --setup" to set up.'
 		exit
 	fi
+	echo "@WDIR"
 	. $WDIR/bin/activate
 	echo 'Starting Suwako in virtualenv mode.'
 	python suwako.py
