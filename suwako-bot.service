@@ -6,7 +6,7 @@ Type=simple
 PIDFile=/run/suwako-bot.pid
 WorkingDirectory=/opt/suwako-bot
 ExecStart=/bin/bash /opt/suwako-bot/run.sh -v
-ExecStop=kill /run/suwako-bot.pid
+ExecStop=/bin/kill /run/suwako-bot.pid
 User=suwako
 Group=suwako
 
