@@ -13,6 +13,7 @@ if ! [[ $PVERSION = '3' ]]; then
 			PYTHON='python3.6'
 		else
 			echo 'Python 3 is not installed.'
+			exit 1
 		fi
 	fi
 fi
@@ -31,7 +32,7 @@ if [[ $* = *'-v'* || $* = *'--virtualenv'* ]]; then
 	# Check if virtualenv is installed
 	if ! [[ $(command -v virtualenv) ]]; then
 		echo 'Virtualenv is not installed. Exiting...'
-		exit
+		exit 1
 	fi
 	
 	# Prepare virtualenv
@@ -47,7 +48,7 @@ if [[ $* = *'-v'* || $* = *'--virtualenv'* ]]; then
 	# Run virtualenv
 	if ! [[ -f "./bin/activate" ]]; then
 		echo 'Virtualenv is not set up. Run "suwkao.sh -v --setup" to set up.'
-		exit
+		exit 1
 	fi
 	echo "@WDIR"
 	. $WDIR/bin/activate
@@ -55,13 +56,13 @@ if [[ $* = *'-v'* || $* = *'--virtualenv'* ]]; then
 	python suwako.py
 	deactivate
 	echo 'Exiting...'
-	exit
+	exit 1
 
 # Global mode setup
 elif [[ $* = *'--setup'* ]]; then
 	if ! [[ $(command -v pip) ]]; then
 		echo 'Pip is not installed. Exiting...'
-		exit
+		exit 1
 	fi
 	
 	pip install -r requirements.txt
