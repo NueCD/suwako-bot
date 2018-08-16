@@ -9,7 +9,7 @@ data = {}
 tag_weight = {}
 url = 'http://gelbooru.com/index.php?page=dapi&s=post&q=index&tags='
 source = None
-current_tags = None
+current_tags = []
 current_channel = None
 latest_search = None
 
@@ -55,6 +55,9 @@ def add_ratings(current_tags, user):
         except ValueError:
             tags.append(t)
             scores.append(0)
+
+        except KeyError:
+            pass
 
     for i in range(len(tags)):
         ratings.append(': '.join([tags[i], str(scores[i])]))
@@ -147,8 +150,8 @@ def search(tags, message):
         tagsa = tags
         tags = tags.split('+')
 
+        # Got to keep it legal.
         tags.append('-trap')
-        tags.append('-futanari')
         tags.append('-loli')
         tags.append('-shota')
 
@@ -190,9 +193,9 @@ def search(tags, message):
 """
 Compile raw string of tags to search string
 """
-def compile_tags(message, user):
+def compile_tags(tags, user):
     global latest_search
-    tags = message.content.split(' ')
+    tags = tags.split(' ')
     tags.pop(0)
 
     try:
@@ -212,13 +215,38 @@ def compile_tags(message, user):
         if latest_search.replace('+rating:explicit', '').replace('+rating:safe', '') == tags and '*' not in latest_search:
             if data['debug']:
                 print("Repetetive search")
-            save_ratings(message.author.id, sort_ratings(add_ratings(tags.split('+'), user)))
+            save_ratings(user, sort_ratings(add_ratings(tags.split('+'), user)))
 
     except AttributeError:
         pass
 
     return tags
 
+
+"""
+Search for tags
+"""
+def tag_search(tag):
+    tags = []
+    if tag.startswith("-"):
+        return ['', tag]
+    try:
+        html = PyQuery(urlopen(''.join(["https://gelbooru.com/index.php?page=tags&s=list&tags=*", \
+            tag, '*&sort=desc&order_by=index_count'])).read())
+        
+        for p in html('table.highlightable tr').items():
+            tags.append(p('span').text())
+
+        tags = tags[:10]
+        if data['debug']:
+            print(tags)
+
+    except:
+        if data['debug']:
+            print("Error when searching for tag.")
+        return ['', tag]
+
+    return tags
 
 """
 The function run when recieving a call from Discord.
@@ -237,6 +265,13 @@ async def on_message(message):
             message.author.mention]))
 
     """
+    Do the latest search again
+    """
+    if message.content.startswith(''.join([data['key'], 'more'])):
+        post = search(latest_search, message)
+        await client.send_message(message.channel, post)
+
+    """
     Return source of last image.
     """
     if message.content.startswith(''.join([data['key'], 'source'])):
@@ -250,16 +285,29 @@ async def on_message(message):
         Return safe gelbooru image.
         """
     elif message.content.startswith(''.join([data['key'], 'img'])):
-        tags = compile_tags(message, message.author.id)
-        tags = '+'.join([tags, 'rating:safe'])
-        post = search(tags, message)
+        if not data['autosearch']:
+            tags = compile_tags(message.content, message.author.id)
+            post = search('+'.join([tags, 'rating:safe']), message)
+        else:
+            tags = '+'.join(message.content.split(' '))
+            post = None
 
-        i = 0
-        while i < 3 and not post:
-            tags = compile_tags(message, message.author.id)
-            tags = '+'.join([tags, 'rating:safe'])
-            post = search(tags, message)
-            i += 1
+        if data['debug']:
+            print(post)
+
+        if not post:
+            t = []
+            for a in tags.split("+"):
+                b = tag_search(a)[1]
+                if a == b:
+                    t.append(a)
+                else:
+                    t.append(b)
+
+            if data['debug']:
+                print(t)
+            tags = compile_tags(' '.join(t), message.author.id)
+            post = search('+'.join([tags, 'rating:safe']), message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -271,16 +319,29 @@ async def on_message(message):
         Return explicit gelbooru image.
         """
     elif message.content.startswith(''.join([data['key'], 'eimg'])):
-        tags = compile_tags(message, message.author.id)
-        tags = '+'.join([tags, 'rating:explicit'])
-        post = search(tags, message)
+        if not data['autosearch']:
+            tags = compile_tags(message.content, message.author.id)
+            post = search('+'.join([tags, 'rating:explicit']), message)
+        else:
+            tags = '+'.join(message.content.split(' '))
+            post = None
 
-        i = 0
-        while i < 3 and not post:
-            tags = compile_tags(message, message.author.id)
-            tags = '+'.join([tags, 'rating:explicit'])
-            post = search(tags, message)
-            i += 1
+        if data['debug']:
+            print(post)
+
+        if not post:
+            t = []
+            for a in tags.split("+"):
+                b = tag_search(a)[1]
+                if a == b:
+                    t.append(a)
+                else:
+                    t.append(b)
+
+            if data['debug']:
+                print(t)
+            tags = compile_tags(' '.join(t), message.author.id)
+            post = search('+'.join([tags, 'rating:explicit']), message)
 
         if not post:
             post = '```Could not find anything using tags:\n    %s```' % ', '.join(tags.split('+'))
@@ -325,7 +386,7 @@ async def on_message(message):
         for r in get_ratings(message.author.id):
             a = r.split(': ')
             tags.append(a[0])
-            scores.append(int(a[1]))
+            scores.append(float(a[1]))
 
         for r in r_tags:
             for i in range(len(tags)):
@@ -350,19 +411,8 @@ async def on_message(message):
         """
         Get wildcard alternatives
         """
-    elif message.content.startswith(''.join([data['key'], 'tag'])):
-        tags = []
-        try:
-            html = PyQuery(urlopen(''.join(["https://gelbooru.com/index.php?page=tags&s=list&tags=*", \
-                message.content.split(' ')[1], '*&sort=desc&order_by=index_count'])).read())
-            
-            for p in html('table.highlightable tr').items():
-                tags.append(p('span').text())
-
-            tags = tags[:10]
-
-        except:
-            post = "General exception."
+    elif message.content.startswith(''.join([data['key'], 'search'])):
+        tags = tag_search(message.content.split(' ')[1])
 
         if tags:
             post = "```Tag matches (max 10):%s```" % '\n    '.join(tags)
@@ -375,13 +425,17 @@ async def on_message(message):
         Help prints all commands.
         """
     elif message.content.startswith(''.join([data['key'], 'help'])):
-        await client.send_message(message.channel, '```%s```' % '\n'.join(['Commandlist:\n'
+        await client.send_message(message.channel, '```%s```' % '\n'.join([
+            'Autosearch is set to %i.' % data['autosearch'],
+            '\n',
+            'Commandlist:\n',
             '    $hi - Says hello back.',
             '    $img [tags] - Returns a safe gelbooru image with tags.',
             '    $eimg [tags] - Returns an explicit  gelbooru image with tags.',
+            '    $more - Do the same search again.'
             '    $source - Returns source of previous image.',
             '    $rating - See your own tag ratings.',
-            '    $tag [tag] - search for a tag.',
+            '    $search [tag] - search for a tag.',
             '    $remove_rating [tags] - Remove tags from rating list.',
             '    $reset_rating - Resets tag ratings.',
             '    $credits - Show program credits.']))
