@@ -500,7 +500,6 @@ try:
             if data['debug']:
                 print(traceback.format_exc())
             print('Error loading configuration. Check configuration.')
-            input('Press enter to exit.')
             sys.exit(0)
 
 
@@ -510,10 +509,9 @@ try:
 except FileNotFoundError:
     with open('config.txt', 'w') as rf:
         lines = '\n'.join(['token=[token]', 'key=$', 'debug=0', \
-            'positive_reactions=wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute', 'negative_reactions=ugh,fy,nej'])
+            'positive_reactions=wow,wau,hett,hot,mysigt,bra,fin,lmao,lol,cute', 'negative_reactions=ugh,fy,nej', 'reaction_weight_mod=1'])
         rf.write(''.join(lines))
     print('Please add token to configuration file.')
-    input('Press any key to exit.')
     sys.exit(0)
 
 
